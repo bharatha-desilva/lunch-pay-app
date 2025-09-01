@@ -16,34 +16,47 @@ class AuthService {
    */
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      // ReqRes API specific endpoint for login
-      const response = await apiService.post<{ token: string }>(
-        '/login',
-        credentials
-      );
+      // Real API login endpoint with nested response structure
+      const response = await apiService.post<{
+        user: {
+          id: string;
+          email: string;
+          name: string;
+          role: string;
+        };
+        tokens: {
+          access_token: string;
+          refresh_token: string;
+          expires_in: number;
+        };
+      }>('/auth/login', credentials);
       
-      // Create a mock user object since ReqRes doesn't return user data
-      const mockUser: User = {
-        id: '1',
-        email: credentials.email,
-        name: credentials.email.split('@')[0],
-        createdAt: new Date().toISOString(),
-      };
+      // Extract data from nested response structure
+      const { user, tokens } = response;
       
       const authResponse: AuthResponse = {
-        user: mockUser,
-        token: response.token,
-        expiresIn: 3600, // 1 hour
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: new Date().toISOString(), // API doesn't provide this
+        },
+        token: tokens.access_token,
+        expiresIn: tokens.expires_in,
       };
       
-      // Store authentication data
+      // Store authentication data including refresh token
       authStorage.setToken(authResponse.token);
+      authStorage.setRefreshToken(tokens.refresh_token);
       authStorage.setUserData(authResponse.user);
+      
+      console.log('Auth service: Login successful, user data stored:', authResponse.user);
       
       return authResponse;
     } catch (error) {
       // Clear any existing auth data on login failure
       authStorage.clearAll();
+      console.error('Auth service: Login failed:', error);
       throw error;
     }
   }
@@ -53,37 +66,51 @@ class AuthService {
    */
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     try {
-      // ReqRes API specific endpoint for registration
-      const response = await apiService.post<{ id: number; token: string }>(
-        '/register',
-        {
-          email: userData.email,
-          password: userData.password,
-        }
-      );
+      // Real API registration endpoint with nested response structure
+      const response = await apiService.post<{
+        success: boolean;
+        message: string;
+        data: {
+          user: {
+            id: string;
+            email: string;
+            name: string;
+            role: string;
+          };
+          tokens: {
+            access_token: string;
+            refresh_token: string;
+            expires_in: number;
+          };
+        };
+      }>('/auth/register', userData);
       
-      // Create a mock user object from registration data
-      const mockUser: User = {
-        id: response.id.toString(),
-        email: userData.email,
-        name: userData.name,
-        createdAt: new Date().toISOString(),
-      };
+      // Extract data from nested response structure
+      const { user, tokens } = response.data;
       
       const authResponse: AuthResponse = {
-        user: mockUser,
-        token: response.token,
-        expiresIn: 3600, // 1 hour
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: new Date().toISOString(), // API doesn't provide this
+        },
+        token: tokens.access_token,
+        expiresIn: tokens.expires_in,
       };
       
-      // Store authentication data
+      // Store authentication data including refresh token
       authStorage.setToken(authResponse.token);
+      authStorage.setRefreshToken(tokens.refresh_token);
       authStorage.setUserData(authResponse.user);
+      
+      console.log('Auth service: Registration successful, user data stored:', authResponse.user);
       
       return authResponse;
     } catch (error) {
       // Clear any existing auth data on registration failure
       authStorage.clearAll();
+      console.error('Auth service: Registration failed:', error);
       throw error;
     }
   }

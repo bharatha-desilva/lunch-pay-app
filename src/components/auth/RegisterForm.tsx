@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
@@ -21,7 +21,8 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { register: registerUser } = useAuth();
+  const [isRegisterInProgress, setIsRegisterInProgress] = useState(false);
+  const { register: registerUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const {
@@ -32,13 +33,29 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
   });
 
+  // Watch for authentication state changes after registration
+  useEffect(() => {
+    if (isAuthenticated && isRegisterInProgress) {
+      console.log('RegisterForm: Authentication state changed to authenticated, navigating to dashboard...');
+      setIsRegisterInProgress(false);
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isRegisterInProgress, navigate]);
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setError(null);
+      setIsRegisterInProgress(true);
+      console.log('RegisterForm: Starting registration with data:', { email: data.email, name: data.name });
+      
       await registerUser(data);
-      // Navigate to dashboard after successful registration
-      navigate('/dashboard');
+      
+      console.log('RegisterForm: Registration completed successfully, waiting for auth state update...');
+      // Navigation will be handled by useEffect when isAuthenticated becomes true
+      
     } catch (err) {
+      console.error('RegisterForm: Registration failed with error:', err);
+      setIsRegisterInProgress(false);
       setError(formatValidationError(err));
     }
   };

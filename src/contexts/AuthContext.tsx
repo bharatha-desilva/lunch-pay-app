@@ -39,9 +39,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setToken(storedToken);
           setUser(storedUser);
 
-          // Skip token validation for demo API
-          // In production, you would verify the token with the server
-          console.log('Using stored authentication data');
+          // Validate token with real API
+          try {
+            const currentUser = await authService.getCurrentUser();
+            setUser(currentUser);
+            console.log('Token validated successfully');
+          } catch (error) {
+            console.warn('Token validation failed, clearing auth data:', error);
+            logout();
+          }
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -57,11 +63,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (credentials: LoginRequest): Promise<void> => {
     try {
       setIsLoading(true);
+      console.log('AuthContext: Starting login process...');
+      
       const authResponse = await authService.login(credentials);
+      console.log('AuthContext: Login successful, setting user and token:', authResponse.user);
 
       setUser(authResponse.user);
       setToken(authResponse.token);
+      
+      console.log('AuthContext: User and token set successfully');
     } catch (error) {
+      console.error('AuthContext: Login failed:', error);
       setUser(null);
       setToken(null);
       throw error;

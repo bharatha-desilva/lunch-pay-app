@@ -9,6 +9,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { GroupPage } from '@/pages/GroupPage';
+import { ExpensesPage } from '@/pages/ExpensesPage';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -66,6 +67,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <GroupPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups/:groupId/expenses"
+                element={
+                  <ProtectedRoute>
+                    <ExpensesPage />
                   </ProtectedRoute>
                 }
               />

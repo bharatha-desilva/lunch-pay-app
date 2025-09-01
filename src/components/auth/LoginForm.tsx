@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
@@ -20,7 +20,8 @@ import { formatValidationError } from '@/utils/formatters';
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const [isLoginInProgress, setIsLoginInProgress] = useState(false);
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const {
@@ -31,13 +32,29 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
+  // Watch for authentication state changes after login
+  useEffect(() => {
+    if (isAuthenticated && isLoginInProgress) {
+      console.log('LoginForm: Authentication state changed to authenticated, navigating to dashboard...');
+      setIsLoginInProgress(false);
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isLoginInProgress, navigate]);
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null);
+      setIsLoginInProgress(true);
+      console.log('LoginForm: Starting login with credentials:', { email: data.email });
+      
       await login(data);
-      // Navigate to dashboard after successful login
-      navigate('/dashboard');
+      
+      console.log('LoginForm: Login completed successfully, waiting for auth state update...');
+      // Navigation will be handled by useEffect when isAuthenticated becomes true
+      
     } catch (err) {
+      console.error('LoginForm: Login failed with error:', err);
+      setIsLoginInProgress(false);
       setError(formatValidationError(err));
     }
   };

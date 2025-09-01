@@ -17,12 +17,7 @@ class GroupsService {
    * Get all groups for current user
    */
   async getUserGroups(): Promise<PaginatedResponse<Group>> {
-    // For demo purposes, return mock data since we don't have a real groups API
-    const mockGroups: Group[] = [];
-    return { 
-      data: mockGroups, 
-      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } 
-    };
+    return groupApi.getAll() as Promise<PaginatedResponse<Group>>;
   }
 
   /**
